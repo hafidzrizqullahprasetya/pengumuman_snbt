@@ -12,6 +12,26 @@
       "dest": "/server.js"
     },
     {
+      "src": "/style.css",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/bootstrap.min.css",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/snbt-1.0.min.js",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/deadline.js",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/images/(.*)",
+      "dest": "/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/server.js"
     }

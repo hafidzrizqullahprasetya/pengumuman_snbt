@@ -9,9 +9,62 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname)));
 
-// Sample data for universities and programs
+// Serve static files with proper MIME types
+app.use(express.static(path.join(__dirname), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        } else if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        } else if (path.endsWith('.png')) {
+            res.setHeader('Content-Type', 'image/png');
+        } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+            res.setHeader('Content-Type', 'image/jpeg');
+        } else if (path.endsWith('.ico')) {
+            res.setHeader('Content-Type', 'image/x-icon');
+        }
+    }
+}));
+
+// Specific routes for critical assets
+app.get('/style.css', (req, res) => {
+    res.setHeader('Content-Type', 'text/css');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(__dirname, 'style.css'));
+});
+
+app.get('/bootstrap.min.css', (req, res) => {
+    res.setHeader('Content-Type', 'text/css');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(__dirname, 'bootstrap.min.css'));
+});
+
+app.get('/snbt-1.0.min.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(__dirname, 'snbt-1.0.min.js'));
+});
+
+app.get('/deadline.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.sendFile(path.join(__dirname, 'deadline.js'));
+});
+
+// Serve images with proper headers
+app.use('/images', express.static(path.join(__dirname, 'images'), {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.png')) {
+            res.setHeader('Content-Type', 'image/png');
+        } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+            res.setHeader('Content-Type', 'image/jpeg');
+        }
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+}));
+
+// Universities data
 const universities = [
     { kode: "001", nama: "Universitas Indonesia", url: "https://www.ui.ac.id/daftar-ulang" },
     { kode: "002", nama: "Institut Teknologi Bandung", url: "https://www.itb.ac.id/daftar-ulang" },
@@ -48,9 +101,9 @@ const programs = [
     { kode: "86201", nama: "Ilmu Komunikasi" }
 ];
 
-// Generate QR code URL (placeholder)
+// Generate QR code URL (using local image)
 function generateQRCode(nopes) {
-    return '/images/qr.png'; // Use local QR image
+    return '/images/qr.png';
 }
 
 // Generate random selection for auto-pass
@@ -73,11 +126,13 @@ function validateDate(day, month, year) {
            date.getDate() == day;
 }
 
-// Routes
+// Main route
 app.get('/', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// API endpoint for checking results
 app.post('/api/check-result', (req, res) => {
     const { nopes, day, month, year, nama, ptn, prodi, statement } = req.body;
     
@@ -172,26 +227,44 @@ app.get('/api/programs', (req, res) => {
     res.json(programs);
 });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'SNBT System is running',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error:', err.stack);
     res.status(500).json({
         success: false,
         message: 'Terjadi kesalahan pada server.'
     });
 });
 
-// 404 handler
-app.use((req, res) => {
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
     res.status(404).json({
         success: false,
-        message: 'Halaman tidak ditemukan.'
+        message: 'API endpoint tidak ditemukan.'
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`SNBT Announcement System 2025 - Auto Pass Mode`);
+// 404 handler for other routes - redirect to main page
+app.use((req, res) => {
+    res.redirect('/');
 });
+
+// Start server
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+        console.log(`📚 SNBT Announcement System 2025 - Auto Pass Mode`);
+        console.log(`🎯 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+}
 
 module.exports = app;
